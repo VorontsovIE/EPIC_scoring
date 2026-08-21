@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Check arguments
+if [[ $# -ne 3 ]]; then
+    echo "Usage: $0 template_bed intensities_txt output_file" >&2
+    exit 1
+fi
+
+template_bed="$1"
+csrna_txt="$2"
+output_file="$3"
+
+# Create temporary files
+tmp_template=$(mktemp -t template.XXXXXX)
+tmp_intensities=$(mktemp -t intensities.XXXXXX)
+trap "rm -f '$tmp_template' '$tmp_intensities'" EXIT
+
+# Decompress based on file extension
+if [[ "$template_bed" == *.gz ]]; then
+    template_input="<(gunzip -c '$template_bed')"
+else
+    template_input="$template_bed"
+fi
+
+if [[ "$csrna_txt" == *.gz ]]; then
+    intensities_input="<(gunzip -c '$csrna_txt')"
+else
+    intensities_input="$csrna_txt"
+fi
+
+# Output handling
+if [[ "$output_file" == *.gz ]]; then
+    eval "awk -f make_bed.awk $template_input $intensities_input" | gzip -c > "$output_file"
+else
+    eval "awk -f make_bed.awk $template_input $intensities_input" > "$output_file"
+fi

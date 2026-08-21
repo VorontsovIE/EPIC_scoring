@@ -1,0 +1,35 @@
+#!/bin/bash
+# validate <N> <data.txt.gz>
+
+N="$1"
+FILE="$2"
+
+if [ -z "$N" ] || [ -z "$FILE" ]; then
+    echo "bad"
+    exit 1
+fi
+
+if [ ! -f "$FILE" ]; then
+    echo "bad"
+    exit 1
+fi
+
+# MAX_SIZE = N * 9 bytes (0.xxxxx\n = 8 bytes + some additional space)
+MAX_SIZE=$((N * 9))
+
+# Count lines in first MAX_SIZE bytes
+LINE_COUNT=$(zcat "$FILE" 2>/dev/null | head -c $MAX_SIZE | grep -c .)
+if [ "$LINE_COUNT" -ne "$N" ]; then
+    echo "bad"
+    exit 1
+fi
+
+# Check format of each line
+VALID=$(zcat "$FILE" 2>/dev/null | head -c $MAX_SIZE | grep -cE '^(0(\.[0-9]{0,5})?|1(\.0{0,5})?)$')
+if [ "$VALID" -ne "$N" ]; then
+    echo "bad"
+    exit 1
+fi
+
+echo "ok"
+exit 0
